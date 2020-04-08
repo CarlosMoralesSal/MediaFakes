@@ -13,10 +13,10 @@ import csv
 import sys
 
 #Twitter API credentials
-consumer_key = "PtGVGxWlMLfDnjy9qt0oLtIOD"
-consumer_secret = "fL2hz5bvwMPhtWTN9cjhUNhEj6lzPFEAftNpFpt1eI1tmoS9P7"
-access_key = "356661264-xXPwNCFkrr8ijSU7D3LsklkvIkdTvqbhOB4Svbzw"
-access_secret = "OUgMBd0jeBGqVYL9yL0TZQyjHkh8pDopYxK9Uri5RwJ9D"
+consumer_key = ""
+consumer_secret = ""
+access_key = ""
+access_secret = ""
 
 
 def get_all_tweets(screen_name):
@@ -74,6 +74,12 @@ def get_all_tweets(screen_name):
             writer.writerows(outtweets)
 
         pass
+        with open('%s_tweets.csv' % screen_name) as in_file:
+           with open('%s_tweets_clean.csv' % screen_name, 'w') as out_file:
+             writer = csv.writer(out_file)
+             for row in csv.reader(in_file):
+                if any(row):
+                  writer.writerow(row)
 
 
 if __name__ == '__main__':

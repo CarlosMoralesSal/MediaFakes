@@ -74,12 +74,10 @@ def get_all_tweets(screen_name):
             writer.writerows(outtweets)
 
         pass
-        with open('%s_tweets.csv' % screen_name) as in_file:
-           with open('%s_tweets_clean.csv' % screen_name, 'w') as out_file:
-             writer = csv.writer(out_file)
-             for row in csv.reader(in_file):
-                if any(row):
-                  writer.writerow(row)
+        with open('%s_tweets.csv' % screen_name) as infile, open('%s_tweets_clean.csv' % screen_name, 'w') as outfile:
+            for line in infile:
+                if not line.strip(): continue  # skip the empty line
+                outfile.write(line)  # 
 
 
 if __name__ == '__main__':

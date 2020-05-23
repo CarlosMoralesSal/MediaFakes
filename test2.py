@@ -9,6 +9,7 @@ import urllib
 from urllib import request
 from http.cookiejar import CookieJar
 from bs4 import BeautifulSoup
+import os
 #from urllib2 import quote as q, unquote as unq, urlencode
 #from urllib2 import build_opener, urlopen, HTTPCookieProcessor
 #from cookielib import CookieJar
@@ -82,6 +83,8 @@ def get_similar_image_urls(html):
           print(idimage)
           #print(url3)
     scripts=soup.find_all('script')
+    path = "./downloadsimages"
+    os.mkdir(path)
     for nonce in scripts:
         if nonce.has_attr('nonce'):
             if str(nonce.text.strip()).find("data:image/jpeg;base64")>0:
@@ -104,7 +107,7 @@ def get_similar_image_urls(html):
              images=images[:-(len(images)-(images.find(piece)))].replace('\\x3d','=')
              imgdata = base64.b64decode(images)
              #print(images)
-             with open(imageName+".jpg", "wb") as fh:
+             with open(path+"/"+imageName+".jpg", "wb") as fh:
                  fh.write(imgdata)
         
         

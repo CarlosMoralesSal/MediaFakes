@@ -11,12 +11,13 @@ Created on Tue Apr  7 20:26:53 2020
 import tweepy #https://github.com/tweepy/tweepy
 import csv
 import sys
+from datetime import datetime
 
 #Twitter API credentials
-consumer_key = ""
-consumer_secret = ""
-access_key = ""
-access_secret = ""
+consumer_key = "PtGVGxWlMLfDnjy9qt0oLtIOD"
+consumer_secret = "fL2hz5bvwMPhtWTN9cjhUNhEj6lzPFEAftNpFpt1eI1tmoS9P7"
+access_key = "356661264-xXPwNCFkrr8ijSU7D3LsklkvIkdTvqbhOB4Svbzw"
+access_secret = "OUgMBd0jeBGqVYL9yL0TZQyjHkh8pDopYxK9Uri5RwJ9D"
 
 
 def get_all_tweets(screen_name):
@@ -56,25 +57,36 @@ def get_all_tweets(screen_name):
 
         #go through all found tweets and remove the ones with no images 
         outtweets = [] #initialize master list to hold our ready tweets
+        i=0;
         for tweet in alltweets:
                 #not all tweets will have media url, so lets skip them
                 try:
-                        print(tweet.entities['media'][0]['media_url'])
+                     print(tweet.entities['media'][0]['media_url'])
+                     print(i)
                 except (NameError, KeyError):
                         #we dont want to have any entries without the media_url so lets do nothing
                         pass
                 else:
                         #got media_url - means add it to the output
-                        outtweets.append([tweet.entities['media'][0]['media_url']])
-
+                        outtweets.append([tweet.entities['media'][0]['media_url']+"||"+(tweet.created_at).strftime("%Y-%m-%d,%H:%M:%S")+"||"+str((tweet.text).encode('ascii','ignore').decode('ascii')).rstrip('\n\n').replace("\n\n","").replace("\n","").replace("\r","")])
+                        #comments=[tweet.entities['media'][0]['media_url']]+str(tweet.created_at)
+                        #comments=[tweet.entities['media'][0]['media_url']].insert(1,str(tweet.created_at))
+                        #outtweets.append((tweet.text).encode('ascii','ignore').decode('ascii'))
+                        #comment=(tweet.text).encode('ascii','ignore').decode('ascii')
+                        #print(comment)
+                        #outtweets.append(comments)
+                        #outtweets.insert(1,str(tweet.created_at))
+                        #outtweets.append([str(tweet.created_at)])
+                        i+=1
+        print(outtweets)
         #write the csv  
-        with open('%s_tweets.csv' % screen_name, 'w') as f:
+        with open('tweets.csv', 'w') as f:
             writer = csv.writer(f)
        #         #writer.writerow(["id","created_at","text","media_url"])
             writer.writerows(outtweets)
 
         pass
-        with open('%s_tweets.csv' % screen_name) as infile, open('%s_tweets_clean.csv' % screen_name, 'w') as outfile:
+        with open('tweets.csv') as infile, open('tweets_clean.csv', 'w') as outfile:
             for line in infile:
                 if not line.strip(): continue  # skip the empty line
                 outfile.write(line)  # 
@@ -82,4 +94,4 @@ def get_all_tweets(screen_name):
 
 if __name__ == '__main__':
         #pass in the username of the account you want to download
-        get_all_tweets("CarlosMoralesD1")
+        get_all_tweets(sys.argv[1])

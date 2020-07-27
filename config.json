@@ -1,0 +1,16 @@
+{
+    "mysql":{
+        "host":"localhost",
+        "user":"root",
+        "passwd":"Kyra0384!",
+        "db":"platon"
+    },
+    "other":{
+        "preprocessing_queue":[
+            "preprocessing.scale_and_center",
+            "preprocessing.dot_reduction",
+            "preprocessing.connect_lines"
+            ],
+        "use_anonymous":true
+    }
+}

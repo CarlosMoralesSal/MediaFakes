@@ -23,6 +23,8 @@ import mysql.connector
 from urllib.parse import urljoin, urlparse
 import requests
 from tqdm import tqdm
+import shutil
+import databaseconnection as cnx
 
 
 cj = CookieJar()
@@ -33,17 +35,14 @@ opener.addheaders = [
     ('Accept-Language','es,en-us;q=0.7,en;q=0.3')
 ]
 
-
+URLFAKE=""
 BASE_URL = 'https://www.google.com'
 BASE_SEARCH_URL = BASE_URL + '/searchbyimage?%s'
 
 REFERER_KEY = 'Referer'
 
 def is_valid(url):
-    print(str(url))
     parsed = urlparse(str(url))
-    print(parsed)
-    print("Valid es: "+str(bool(parsed.netloc) and bool(parsed.scheme)))
     return bool(parsed.netloc) and bool(parsed.scheme)
 
 def get_all_images(url):
@@ -124,7 +123,6 @@ def search_image(url):
         'hl': 'es',
         }
     query = BASE_SEARCH_URL % urllib.parse.urlencode(params)
-    print(query)
     f = opener.open(query)
     url = f.url
     f = opener.open(url)
@@ -137,14 +135,15 @@ def search_image(url):
 def get_similar_image_urls(html,lastid):
     soup = BeautifulSoup(html,'html.parser')
     
+    mydb= cnx.database_connection()
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
-    mydb = mysql.connector.connect(
-            host=data["mysql"]["host"],
-            user=data["mysql"]["user"],
-            password=data["mysql"]["passwd"],
-            database=data["mysql"]["db"]
-    )
+#    mydb = mysql.connector.connect(
+#            host=data["mysql"]["host"],
+#            user=data["mysql"]["user"],
+#            password=data["mysql"]["passwd"],
+#            database=data["mysql"]["db"]
+#    )
     
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
@@ -152,7 +151,7 @@ def get_similar_image_urls(html,lastid):
         json_string='''{"images":[''';
 
         for item in soup.find('div', id="iur").find_all('a'):   
-            url = item.get('href')
+            #url = item.get('href')
             soup2= BeautifulSoup(str(item),'html.parser')
             json_string=json_string+'''{"url":'''+'''"'''+item.get('href')+'''"'''+''',''';
             for item2 in soup2.find('g-img').findAll('img'):
@@ -201,13 +200,11 @@ def get_similar_image_urls(html,lastid):
                  imageName=imageName.replace(subStr,"").replace(subStr2,"").replace("]","").replace("\'","").replace(",","_")
                  images=images[:-(len(images)-(images.find(piece)))].replace('\\x3d','=')
                  imgdata = base64.b64decode(images)
-                 #print(imageName)
                  with open(path+"/"+imageName+".jpg", "wb") as fh:
                      fh.write(imgdata)
         
         for item77 in soup.find('div', id="rso").findAll('a', {'class':"rGhul"}): 
-           url = item77.get('href')
-           #print(str(item77))
+           #url = item77.get('href')
            if item77.has_attr('ping'):
                
               ping1=str(item77.get('ping').replace("%3D","=").replace("%26","&").replace("%3F","?")[46:])
@@ -223,7 +220,7 @@ def get_similar_image_urls(html,lastid):
            for item5 in soup5.find('g-img').findAll('img'):
                mycursor = mydb.cursor()
                sql = "INSERT INTO googlesearch (tweetid,url,title,ping,imageName,src) VALUES (%s,%s,%s,%s,%s,%s)"
-               val = (lastid,item77.get('href'),str(ping3),str(ping4),item5.get('id'),item5.get('src'))
+               val = (lastid,item77.get('href'),str(ping3).replace("%3D","=").replace("%26","&"),str(ping4).replace("%3D","=").replace("%26","&"),item5.get('id'),item5.get('src'))
                mycursor.execute(sql, val)
                mydb.commit()
                mycursor = mydb.cursor()
@@ -238,24 +235,42 @@ def get_similar_image_urls(html,lastid):
         pass
     
 def main():
+    global URLFAKE
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
-    mydb = mysql.connector.connect(
-            host=data["mysql"]["host"],
-            user=data["mysql"]["user"],
-            password=data["mysql"]["passwd"],
-            database=data["mysql"]["db"]
-    )
+    mydb= cnx.database_connection()
+#    mydb = mysql.connector.connect(
+#            host=data["mysql"]["host"],
+#            user=data["mysql"]["user"],
+#            password=data["mysql"]["passwd"],
+#            database=data["mysql"]["db"]
+#    )
     
+    if (os.path.isdir("./"+sys.argv[1])):
+        shutil.rmtree("./"+sys.argv[1])
+    if os.path.exists("./"+sys.argv[1]+"/reales.txt"):
+       os.remove("./"+sys.argv[1]+"/reales.txt")
+    if os.path.exists("./"+sys.argv[1]+"/fakes.txt"):
+       os.remove("./"+sys.argv[1]+"/fakes.txt")
+    if os.path.exists("./"+sys.argv[1]+"/manual.txt"):
+       os.remove("./"+sys.argv[1]+"/manual.txt")
     tweet.get_all_tweets(sys.argv[1])
     path="./"+sys.argv[1]
     os.mkdir(path)
-    with open(r"C:\Users\Carlos\Desktop\TFM\MediaFakes\tweets_clean.csv") as f:
+    with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
+        fir.write("Imagetweet\n")
+    with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+        fir.write("Imagetweet\n")
+    with open("./"+sys.argv[1]+"/manual.txt","a+") as fir:
+        fir.write("Imagetweet\n")
+    
+   # with open(r"C:\Users\Carlos\Desktop\TFM\MediaFakes\tweets_clean.csv") as f:
+    with open(r"tweets_clean.csv") as f:    
      lis = [line.split() for line in f]        # create a list of lists
      for i, x in enumerate(lis):              #print the list items 
-       #print("line{0} = {1}".format(i, x))
+       
        s= ''.join(x)
-       ##print(len(s))
+       
        if(len(s.split("||")[0])):
            url=s.split("||")[0]
            url=url.replace("\"","")
@@ -289,22 +304,19 @@ def main():
            longurl=len(url.rsplit('/'))
            if myresult is not None:
                import urllib.request
+               #Poner un try catch
                urllib.request.urlretrieve(url, str(myresult[0])+"/"+url.rsplit('/')[longurl-1])
                
                contentdir = os.listdir(str(myresult[0]))
                origin=""
                for f in contentdir:
                    if os.path.isfile(os.path.join(str(myresult[0]), f)) and f.endswith('.jpg') and not f.startswith('dimg'):
-                       ##print(f)
                        origin=str(myresult[0])+"/"+f
-                       ##print(origin)
                        contentdir = os.listdir(str(myresult[0]))
                        pathFile=str(myresult[0])
                        for fi in contentdir:
                             if os.path.isfile(os.path.join(str(myresult[0]), fi)) and fi.endswith('.jpg') and fi.startswith('dimg'):
-                                ##print(fi)
                                 destiny=str(myresult[0])+"/"+fi
-                                ##print(destiny)
                                 result=similars.compare_images(origin,destiny,str(myresult[0]))
                                
                                 if(result<5):
@@ -322,7 +334,6 @@ def main():
                                     mycursor = mydb.cursor()
                                     sql = "UPDATE googlesearch SET similarity=%s WHERE tweetid=%s and imageName=%s"
                                     value = (str(result),lastid,str(fi[:-4]))
-                                    ##print(value)
                                     mycursor.execute(sql, value)
                                     mydb.commit()
                                 else:
@@ -330,23 +341,19 @@ def main():
                                     mycursor = mydb.cursor()
                                     sql = "UPDATE googlesearch SET similarity = %s WHERE tweetid= %s and imageName=%s"
                                     value = (str(result),lastid,str(fi[:-4]))
-                                    ##print(value)
+                                    
                                     mycursor.execute(sql, value)
                                     mydb.commit()
-       ##print(pathFile)
        if pathFile!='':
            num_files = len([f for f in os.listdir(pathFile)if os.path.isfile(os.path.join(pathFile, f))])
-           ##print(num_files)
            if num_files==1:
                mycursor = mydb.cursor()
                sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
                value = (0,lastid)
-               ##print(value)
                mycursor.execute(sql, value)
                mydb.commit()
            else:
               contentdir = os.listdir(pathFile)
-              ###print(contentdir)
               for fi in contentdir:
                   if fi.count("dimg_")>1:
                      os.remove(str(pathFile)+"/"+fi)
@@ -386,21 +393,17 @@ def main():
                       if os.path.isfile(os.path.join(str(myresult[0]), f)) and f.endswith('.jpg') and not f.startswith('dimg'):
                         origin=str(myresult[0])+"/"+f
                     for fi in contentdir:
-                     print("Origen es:" +origin)
                      if fi.startswith('dimg_'):
                         mycursor2 = mydb.cursor()
                         print(mycursor2)
                         sql4="SELECT title FROM googlesearch where tweetid=%s and imageName=%s and pathFile=%s"
                         value=(lastid,str(fi[:-4]),str(myresult[0]))
-                        print(value)
-                        print(mycursor2.execute(sql4,value))
+                        mycursor2.execute(sql4,value)
                         myresult100 = mycursor2.fetchone()
-                        print(myresult100)
                         if myresult100 is not None:
                             # get all images
                             print("Procesando: "+str(myresult100[0]))
                             imgs = get_all_images(str(myresult100[0]))
-                            print("Las imagenes son: "+str(imgs))
                             for img in imgs:
                                 # for each image, download it
                                specialstring="*"
@@ -409,28 +412,22 @@ def main():
                                   download(img, str(myresult[0]))
                                   
        mycursor7 = mydb.cursor()
-       print(mycursor7)
        sql4="SELECT imagetweet FROM tweets where id=%s"
-       print(mycursor7.execute(sql4,(lastid,)))
+       mycursor7.execute(sql4,(lastid,))
        myresult200 = mycursor7.fetchone()
-       print(myresult200)
        result22 = str(myresult200).split('/')[-1]
-       print(result22)
        ##try:
        mycursor = mydb.cursor()
        sql="SELECT pathFile FROM googlesearch where tweetid=%s LIMIT 1"
        mycursor.execute(sql,(lastid,))
-       print(lastid)
        myresult = mycursor.fetchone()
        if mycursor.rowcount>0:
            origin=str(myresult[0])+"/"+str(result22)
            from PIL import Image, ExifTags
            img = Image.open(origin.replace("',)",""))
-           #img = Image.open(os.path.join(root, origin))
            if img._getexif() is not None:
                exif = { ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS }
                if exif is not None:
-                   print(exif)
                    mycursor9 = mydb.cursor()
                    sql = "UPDATE tweets SET metadata=%s WHERE id=%s"
                    value = (exif,lastid)
@@ -438,11 +435,9 @@ def main():
                    mydb.commit()
            contentdir = os.listdir(myresult[0])
            for fi2 in contentdir:
-            print("El último id es:" +str(lastid))
             if not fi2.startswith('dimg_') and fi2 not in origin:
                destiny=str(myresult[0])+"/"+fi2
-               print("El origen es: "+origin)
-               print("El destino es: " +destiny)
+
                result=similars.compare_images(origin.replace("',)",""),destiny,str(myresult[0]))
                if result <= 80:
                    os.remove(str(myresult[0])+"/"+fi2)
@@ -454,7 +449,6 @@ def main():
            ori=str(result22)
            origin=str(myresult[0])+"/"+ori.replace("',)","")
            if origin.endswith('.jpg'):
-               print("Se va a hacer el ELA con " +origin+" y "+path)
                elareturns=ela.level2(origin.replace("',)",""),myresult[0]) 
                mycursor11 = mydb.cursor()
                sql = "UPDATE tweets SET metadata=%s,isManipulated=%s,ELA=%s WHERE id=%s"
@@ -466,11 +460,100 @@ def main():
                    value = ("",elareturns[1],elareturns[0],lastid)
                    mycursor11.execute(sql, value)
                    mydb.commit()
-                   
-               
-       ##except:
-         #print("Error")
-         ##pass
-                        
+           
+           contentdir = os.listdir(str(myresult[0]))
+           for fi in contentdir:
+               fileTest=fi[:-4]
+               mycursorPath=mydb.cursor()
+               sql="SELECT title,ping FROM googlesearch WHERE pathFile=%s and imageName=%s"
+               mycursorPath.execute(sql,(myresult[0],fileTest))
+               myresultCursor=mycursorPath.fetchone()
+               if mycursorPath.rowcount>0:
+                   if myresultCursor[0] is not None:
+
+                      pat = r'(20[0-1][0-5]([-_/]?)[0-9]{2}(?:\2[0-9]{2})?)'
+                      ob1 = re.compile(pat)
+                      if ob1.search(myresultCursor[0]):
+
+                          
+                          grp = ob1.search(myresultCursor[0]).group()
+
+                          mycursorDate = mydb.cursor()
+                          sql="SELECT datetweet FROM tweets where id=%s"
+                          mycursorDate.execute(sql,(lastid,))
+                          myresultDate=mycursorDate.fetchall()
+
+                          
+                          if int(grp[0:4])< int(str(myresultDate[0])[2:6]):
+                              mycursorCmp = mydb.cursor()
+                              sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                              URLFAKE=str(myresultCursor[0])
+                              value = (1,lastid)
+                              mycursorCmp.execute(sql, value)
+                              mydb.commit()
+                          else:
+                              mycursorCmp = mydb.cursor()
+                              sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                              value = (0,lastid)
+                              mycursorCmp.execute(sql, value)
+                              mydb.commit()
+                      else:
+                          import htmldate as hd
+                          from lxml import etree
+
+                          df=hd.find_date(myresultCursor[0])
+                          if df is not None:
+                             mycursorDate = mydb.cursor()
+                             sql="SELECT datetweet FROM tweets where id=%s"
+                             mycursorDate.execute(sql,(lastid,))
+                             myresultDate=mycursorDate.fetchall()
+
+                             if int(df[0:4])<int(str(myresultDate[0])[2:6]):
+                               mycursorCmp = mydb.cursor()
+                               sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                               value = (1,lastid)
+                               mycursorCmp.execute(sql, value)
+                               mydb.commit()
+                             else:
+                               mycursorCmp = mydb.cursor()
+                               sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                               value = (0,lastid)
+                               mycursorCmp.execute(sql, value)
+                               mydb.commit()
+                                 
+           mycursor5 = mydb.cursor()
+           sql="SELECT pathFile,imagetweet,content,datetweet,isFakeNew FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
+           mycursor5.execute(sql,(lastid,))
+           myresult11 = mycursor5.fetchall()
+           for x in myresult11:
+
+             if x[4]==0:
+                 
+                 with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
+                     fir.write(str(x[1])+"\t\t\t\t"+str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
+
+             else:
+               with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+                 fir.write("Para la imagen de: "+str(x[1])+":\n")
+                 fir.write("\t\t\t"+str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
+                 fir.write("\t\t\t"+"Url que le delata: "+URLFAKE+"\n")
+                 
+           
+           mycursorfinal = mydb.cursor()
+           sql="SELECT isFakeNew FROM tweets where id=%s LIMIT 1"
+           mycursorfinal.execute(sql,(lastid,))
+           mycursorFinal = mycursorfinal.fetchone()
+
+           
+              
+           
+           if str(mycursorFinal[0])== "-1":
+              mycursor5 = mydb.cursor()
+              sql="SELECT pathFile,imagetweet,content,datetweet,isFakeNew FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
+              mycursor5.execute(sql,(lastid,))
+              myresult11 = mycursor5.fetchall()
+              with open("./"+sys.argv[1]+"/manual.txt","a+") as fir:
+                 fir.write("Para la imagen de: "+str(x[1])+":\n")
+                 fir.write(str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
 if __name__ == '__main__':
     main()

@@ -96,7 +96,8 @@ def download(url, pathname):
                 # update the progress bar manually
                 progress.update(len(data))
     except:
-        pass
+        print("Error en la descarga")
+        #pass
 
 def get_referer_index():
     i = 0
@@ -138,12 +139,7 @@ def get_similar_image_urls(html,lastid):
     mydb= cnx.database_connection()
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
-#    mydb = mysql.connector.connect(
-#            host=data["mysql"]["host"],
-#            user=data["mysql"]["user"],
-#            password=data["mysql"]["passwd"],
-#            database=data["mysql"]["db"]
-#    )
+
     
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
@@ -239,12 +235,7 @@ def main():
     with open("config.json") as json_data_file:
         data = json.load(json_data_file)
     mydb= cnx.database_connection()
-#    mydb = mysql.connector.connect(
-#            host=data["mysql"]["host"],
-#            user=data["mysql"]["user"],
-#            password=data["mysql"]["passwd"],
-#            database=data["mysql"]["db"]
-#    )
+
     
     if (os.path.isdir("./"+sys.argv[1])):
         shutil.rmtree("./"+sys.argv[1])
@@ -264,7 +255,7 @@ def main():
     with open("./"+sys.argv[1]+"/manual.txt","a+") as fir:
         fir.write("Imagetweet\n")
     
-   # with open(r"C:\Users\Carlos\Desktop\TFM\MediaFakes\tweets_clean.csv") as f:
+   
     with open(r"tweets_clean.csv") as f:    
      lis = [line.split() for line in f]        # create a list of lists
      for i, x in enumerate(lis):              #print the list items 
@@ -380,11 +371,18 @@ def main():
                         count += 1
                  #if len([name for name in os.listdir(str(myresult[0])) if os.path.isfile(name)])==1:
                  if count==1:
+                     mycursorreal = mydb.cursor()
+                     sqlreal="SELECT pathFile,imagetweet,content,datetweet FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
+                     mycursorreal.execute(sqlreal,(lastid,))
+                     #myresult11 = mycursor5.fetchall()
+                     myresultreal = mycursorreal.fetchone()
                      mycursor7 = mydb.cursor()
                      sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
                      value = (0,lastid)
                      mycursor7.execute(sql, value)
                      mydb.commit()
+                     with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
+                       fir.write(str(myresultreal[1])+"\t\t\t\t"+str(myresultreal[2])+"\t\t\t\t"+str(myresultreal[3])+"\t\t\t\t"+str(myresultreal[0])+"\n")
                  else:
                     contentdir = os.listdir(str(myresult[0]))
                     myresult100=""
@@ -461,99 +459,123 @@ def main():
                    mycursor11.execute(sql, value)
                    mydb.commit()
            
+            
+           mycursor5 = mydb.cursor()
+           sql="SELECT pathFile,imagetweet,content,datetweet FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
+           mycursor5.execute(sql,(lastid,))
+           #myresult11 = mycursor5.fetchall()
+           myresult11 = mycursor5.fetchone()
+           
            contentdir = os.listdir(str(myresult[0]))
+           cont=0
+           
            for fi in contentdir:
+               print("El original es: "+origin)
                fileTest=fi[:-4]
-               mycursorPath=mydb.cursor()
-               sql="SELECT title,ping FROM googlesearch WHERE pathFile=%s and imageName=%s"
-               mycursorPath.execute(sql,(myresult[0],fileTest))
-               myresultCursor=mycursorPath.fetchone()
-               if mycursorPath.rowcount>0:
-                   if myresultCursor[0] is not None:
-
-                      pat = r'(20[0-1][0-5]([-_/]?)[0-9]{2}(?:\2[0-9]{2})?)'
-                      ob1 = re.compile(pat)
-                      if ob1.search(myresultCursor[0]):
-
-                          
-                          grp = ob1.search(myresultCursor[0]).group()
-
-                          mycursorDate = mydb.cursor()
-                          sql="SELECT datetweet FROM tweets where id=%s"
-                          mycursorDate.execute(sql,(lastid,))
-                          myresultDate=mycursorDate.fetchall()
-
-                          
-                          if int(grp[0:4])< int(str(myresultDate[0])[2:6]):
-                              mycursorCmp = mydb.cursor()
-                              sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
-                              URLFAKE=str(myresultCursor[0])
-                              value = (1,lastid)
-                              mycursorCmp.execute(sql, value)
-                              mydb.commit()
+               if not fileTest.startswith('temp') and not fileTest.startswith('img') and fileTest not in origin:
+                   mycursorPath=mydb.cursor()
+                   sql="SELECT title,ping FROM googlesearch WHERE pathFile=%s and imageName=%s"
+                   mycursorPath.execute(sql,(myresult[0],fileTest))
+                   myresultCursor=mycursorPath.fetchone()
+                   if mycursorPath.rowcount>0:
+                       if myresultCursor[0] is not None:
+    
+                          pat = r'(20[0-1][0-5]([-_/]?)[0-9]{2}(?:\2[0-9]{2})?)'
+                          ob1 = re.compile(pat)
+                          if ob1.search(myresultCursor[0]):
+    
+                              
+                              grp = ob1.search(myresultCursor[0]).group()
+    
+                              mycursorDate = mydb.cursor()
+                              sql="SELECT datetweet FROM tweets where id=%s"
+                              mycursorDate.execute(sql,(lastid,))
+                              myresultDate=mycursorDate.fetchall()
+    
+                              print("Estoy en :"+str(myresult[0]))
+                              if int(grp[0:4])< int(str(myresultDate[0])[2:6]):
+                                  mycursorCmp = mydb.cursor()
+                                  sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                                  URLFAKE=str(myresultCursor[0])
+                                  value = (1,lastid)
+                                  mycursorCmp.execute(sql, value)
+                                  mydb.commit()
+                                  if cont==0:
+                                     with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+                                         fir.write("Para la imagen de: "+str(myresult11[1])+":\n")
+                                         fir.write("\t\t\t"+str(myresult11[2])+"\t\t\t\t"+str(myresult11[3])+"\t\t\t\t"+str(myresult11[0])+"\n")
+                                         fir.write("\t\t\t"+"Urls que le delata: "+URLFAKE+" Fecha de url: "+str(grp)+"\n")
+                                  else:
+                                         with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+                                           fir.write("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"+URLFAKE+" Fecha de url: "+str(grp)+"\n")
+                                  cont+=1
+                              else:
+                                  mycursorCmp = mydb.cursor()
+                                  sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                                  value = (0,lastid)
+                                  mycursorCmp.execute(sql, value)
+                                  mydb.commit()
+                                  with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
+                                    fir.write(str(myresult11[1])+"\t\t\t\t"+str(myresult11[2])+"\t\t\t\t"+str(myresult11[3])+"\t\t\t\t"+str(myresult11[0])+"\n")
+                                  break;
                           else:
-                              mycursorCmp = mydb.cursor()
-                              sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
-                              value = (0,lastid)
-                              mycursorCmp.execute(sql, value)
-                              mydb.commit()
-                      else:
-                          import htmldate as hd
-                          from lxml import etree
-
-                          df=hd.find_date(myresultCursor[0])
-                          if df is not None:
-                             mycursorDate = mydb.cursor()
-                             sql="SELECT datetweet FROM tweets where id=%s"
-                             mycursorDate.execute(sql,(lastid,))
-                             myresultDate=mycursorDate.fetchall()
-
-                             if int(df[0:4])<int(str(myresultDate[0])[2:6]):
-                               mycursorCmp = mydb.cursor()
-                               sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
-                               value = (1,lastid)
-                               mycursorCmp.execute(sql, value)
-                               mydb.commit()
-                             else:
-                               mycursorCmp = mydb.cursor()
-                               sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
-                               value = (0,lastid)
-                               mycursorCmp.execute(sql, value)
-                               mydb.commit()
-                                 
+                              import htmldate as hd
+                              from lxml import etree
+    
+                              df=hd.find_date(myresultCursor[0])
+                              if df is not None:
+                                 mycursorDate = mydb.cursor()
+                                 sql="SELECT datetweet FROM tweets where id=%s"
+                                 mycursorDate.execute(sql,(lastid,))
+                                 myresultDate=mycursorDate.fetchall()
+    
+                                 if int(df[0:4])<int(str(myresultDate[0])[2:6]):
+                                   mycursorCmp = mydb.cursor()
+                                   sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                                   URLFAKE=str(myresultCursor[0])
+                                   value = (1,lastid)
+                                   mycursorCmp.execute(sql, value)
+                                   mydb.commit()
+                                   if cont==0:
+                                     with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+                                         fir.write("Para la imagen de: "+str(myresult11[1])+":\n")
+                                         fir.write("\t\t\t"+str(myresult11[2])+"\t\t\t\t"+str(myresult11[3])+"\t\t\t\t"+str(myresult11[0])+"\n")
+                                         fir.write("\t\t\t"+"Urls que le delata: "+URLFAKE+" Fecha de url: "+str(df)+"\n")
+                                   else:
+                                         with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
+                                           fir.write("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"+URLFAKE+" Fecha de url: "+str(df)+"\n")
+                                   cont+=1
+                                 else:
+                                   mycursorCmp = mydb.cursor()
+                                   sql = "UPDATE tweets SET isFakeNew=%s WHERE id=%s"
+                                   value = (0,lastid)
+                                   mycursorCmp.execute(sql, value)
+                                   mydb.commit()
+                                   with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
+                                     fir.write(str(myresult11[1])+"\t\t\t\t"+str(myresult11[2])+"\t\t\t\t"+str(myresult11[3])+"\t\t\t\t"+str(myresult11[0])+"\n")
+                                   break;
+                              
            mycursor5 = mydb.cursor()
            sql="SELECT pathFile,imagetweet,content,datetweet,isFakeNew FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
            mycursor5.execute(sql,(lastid,))
-           myresult11 = mycursor5.fetchall()
-           for x in myresult11:
-
-             if x[4]==0:
-                 
-                 with open("./"+sys.argv[1]+"/reales.txt","a+") as fir:
-                     fir.write(str(x[1])+"\t\t\t\t"+str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
-
-             else:
-               with open("./"+sys.argv[1]+"/fakes.txt","a+") as fir:
-                 fir.write("Para la imagen de: "+str(x[1])+":\n")
-                 fir.write("\t\t\t"+str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
-                 fir.write("\t\t\t"+"Url que le delata: "+URLFAKE+"\n")
-                 
-           
+           myresult11 = mycursor5.fetchone()
+           print("Myresult11 es: "+str(myresult11[4]))
+    
+                      
            mycursorfinal = mydb.cursor()
            sql="SELECT isFakeNew FROM tweets where id=%s LIMIT 1"
            mycursorfinal.execute(sql,(lastid,))
            mycursorFinal = mycursorfinal.fetchone()
 
-           
-              
+           print("El final es: "+str(mycursorFinal[0]))          
            
            if str(mycursorFinal[0])== "-1":
               mycursor5 = mydb.cursor()
               sql="SELECT pathFile,imagetweet,content,datetweet,isFakeNew FROM tweets INNER JOIN googlesearch ON tweets.id=googlesearch.tweetid where tweets.id=%s LIMIT 1"
               mycursor5.execute(sql,(lastid,))
-              myresult11 = mycursor5.fetchall()
+              myresult11 = mycursor5.fetchone()
               with open("./"+sys.argv[1]+"/manual.txt","a+") as fir:
-                 fir.write("Para la imagen de: "+str(x[1])+":\n")
-                 fir.write(str(x[2])+"\t\t\t\t"+str(x[3])+"\t\t\t\t"+str(x[0])+"\n")
+                 fir.write("Para la imagen de: "+str(myresult11[1])+":\n")
+                 fir.write(str(myresult11[2])+"\t\t\t\t"+str(myresult11[3])+"\t\t\t\t"+str(myresult11[0])+"\n")
 if __name__ == '__main__':
     main()

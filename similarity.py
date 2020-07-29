@@ -64,17 +64,7 @@ def compare_images(origin,destiny,path):
         print("GOOD Matches:", len(good_points))
         print("How good it's the match: ", len(good_points) / number_keypoints * 100)
         
-        #result = cv2.drawMatches(original, kp_1, image_to_compare, kp_2, good_points, None)
-        
-        
-        #cv2.imshow("result", cv2.resize(result, None, fx=0.4, fy=0.4))
-        #cv2.imwrite("feature_matching.jpg", result)
-        
-        
-        #cv2.imshow("Original", cv2.resize(original, None, fx=0.4, fy=0.4))
-        #cv2.imshow("Duplicate", cv2.resize(image_to_compare, None, fx=0.4, fy=0.4))
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
+
         return len(good_points) / number_keypoints * 100
     except:
         return 0.0

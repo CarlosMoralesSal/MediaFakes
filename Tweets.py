@@ -14,10 +14,10 @@ import sys
 from datetime import datetime
 
 #Twitter API credentials
-consumer_key = "PtGVGxWlMLfDnjy9qt0oLtIOD"
-consumer_secret = "fL2hz5bvwMPhtWTN9cjhUNhEj6lzPFEAftNpFpt1eI1tmoS9P7"
-access_key = "356661264-xXPwNCFkrr8ijSU7D3LsklkvIkdTvqbhOB4Svbzw"
-access_secret = "OUgMBd0jeBGqVYL9yL0TZQyjHkh8pDopYxK9Uri5RwJ9D"
+consumer_key = ""
+consumer_secret = ""
+access_key = ""
+access_secret = ""
 
 
 def get_all_tweets(screen_name):

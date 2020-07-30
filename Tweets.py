@@ -14,10 +14,10 @@ import sys
 from datetime import datetime
 
 #Twitter API credentials
-consumer_key = "PtGVGxWlMLfDnjy9qt0oLtIOD"
-consumer_secret = "fL2hz5bvwMPhtWTN9cjhUNhEj6lzPFEAftNpFpt1eI1tmoS9P7"
-access_key = "356661264-xXPwNCFkrr8ijSU7D3LsklkvIkdTvqbhOB4Svbzw"
-access_secret = "OUgMBd0jeBGqVYL9yL0TZQyjHkh8pDopYxK9Uri5RwJ9D"
+consumer_key = ""
+consumer_secret = ""
+access_key = ""
+access_secret = ""
 
 
 def get_all_tweets(screen_name):
@@ -69,14 +69,7 @@ def get_all_tweets(screen_name):
                 else:
                         #got media_url - means add it to the output
                         outtweets.append([tweet.entities['media'][0]['media_url']+"||"+(tweet.created_at).strftime("%Y-%m-%d,%H:%M:%S")+"||"+str((tweet.text).encode('ascii','ignore').decode('ascii')).rstrip('\n\n').replace("\n\n","").replace("\n","").replace("\r","")])
-                        #comments=[tweet.entities['media'][0]['media_url']]+str(tweet.created_at)
-                        #comments=[tweet.entities['media'][0]['media_url']].insert(1,str(tweet.created_at))
-                        #outtweets.append((tweet.text).encode('ascii','ignore').decode('ascii'))
-                        #comment=(tweet.text).encode('ascii','ignore').decode('ascii')
-                        #print(comment)
-                        #outtweets.append(comments)
-                        #outtweets.insert(1,str(tweet.created_at))
-                        #outtweets.append([str(tweet.created_at)])
+                        
                         i+=1
         print(outtweets)
         #write the csv  
